@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="en">
+
+  <head>
+    <meta charset="UTF-8">
+    <title>Untitled</title>
+    <link rel="stylesheet" href="./style.css">
+
+  </head>
+    
+  <body>
+  <!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>香港公屋屋邨 - HK Public Housing</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+* {box-sizing:border-box;}
+body {margin:0;padding:20px;font-family:'Noto Sans TC',Arial,sans-serif;background:#f8f9fa;}
+h1 {text-align:center;color:#2d3748;margin:0 0 20px;font-size:28px;}
+#status {background:#48bb78;color:white;padding:15px;border-radius:12px;text-align:center;margin-bottom:20px;font-weight:bold;}
+#map {height:450px;border:3px solid #e2e8f0;border-radius:16px;margin-bottom:24px;box-shadow:0 10px 30px rgba(0,0,0,0.2);}
+table {width:100%;border-collapse:collapse;background:white;border-radius:16px;overflow:hidden;box-shadow:0 20px 40px rgba(0,0,0,0.15);table-layout:fixed;}
+th,td {padding:14px 12px;text-align:left;border-bottom:1px solid #e2e8f0;font-size:14px;}
+th {background:linear-gradient(135deg,#3b82f6,#1d4ed8);color:white;font-weight:600;position:relative;cursor:pointer;font-size:15px;}
+tr:hover {background:#f1f5f9;}
+tr.selected {background:linear-gradient(90deg,#fde68a,#fca311)!important;}
+th:nth-child(1),td:nth-child(1){width:18%;}
+th:nth-child(2),td:nth-child(2){width:12%;}
+th:nth-child(3),td:nth-child(3){width:10%;}
+th:nth-child(4),td:nth-child(4){width:12%;}
+th:nth-child(5),td:nth-child(5){width:8%;}
+th:nth-child(6),td:nth-child(6){width:15%;}
+th:nth-child(7),td:nth-child(7){width:25%;}
+.filter-btn {position:absolute;right:12px;top:50%;transform:translateY(-50%);background:rgba(255,255,255,0.2);color:white;border:none;padding:6px 12px;border-radius:20px;cursor:pointer;font-size:12px;}
+.filter-btn:hover {background:rgba(255,255,255,0.3);}
+.dropdown {position:absolute;top:100%;left:0;right:0;background:white;border:2px solid #e2e8f0;border-top:none;z-index:1000;max-height:300px;overflow-y:auto;display:none;box-shadow:0 10px 30px rgba(0,0,0,0.2);}
+.dropdown.active {display:block;}
+.filter-item {padding:12px 16px;cursor:pointer;border-bottom:1px solid #f1f5f9;display:flex;align-items:center;color:#1f2937 !important;font-weight:500;}
+.filter-item:hover {background:#f8fafc;}
+.filter-item input {margin-right:12px;transform:scale(1.2);accent-color:#3b82f6;}
+.clear-filter {background:#ef4444;color:white !important;border:none;padding:12px;width:100%;cursor:pointer;font-weight:600;}
+#count {background:#10b981;color:white;padding:8px 16px;border-radius:20px;font-weight:700;font-size:16px;}
+</style>
+</head>
+<body>
+<h1>🏠 香港公屋屋邨 / HK Public Housing Estates</h1>
+<div id="status">Loading...</div>
+<div id="map"></div>
+<div style="text-align:center;margin-bottom:20px;"><span id="count">Loading...</span></div>
+<table>
+<thead>
+<tr>
+<th>屋邨名稱 / Estate<button class="filter-btn" onclick="toggleFilter(0,event)">篩選/Filter</button><div class="dropdown" id="filter0"></div></th>
+<th>地區 / District<button class="filter-btn" onclick="toggleFilter(1,event)">篩選/Filter</button><div class="dropdown" id="filter1"></div></th>
+<th>大區 / Region<button class="filter-btn" onclick="toggleFilter(2,event)">篩選/Filter</button><div class="dropdown" id="filter2"></div></th>
+<th>類型 / Type<button class="filter-btn" onclick="toggleFilter(3,event)">篩選/Filter</button><div class="dropdown" id="filter3"></div></th>
+<th>年份 / Year<button class="filter-btn" onclick="toggleFilter(4,event)">篩選/Filter</button><div class="dropdown" id="filter4"></div></th>
+<th>大廈類型 / Block Type<button class="filter-btn" onclick="toggleFilter(5,event)">篩選/Filter</button><div class="dropdown" id="filter5"></div></th>
+<th>座數 / Blocks<button class="filter-btn" onclick="toggleFilter(6,event)">篩選/Filter</button><div class="dropdown" id="filter6"></div></th>
+</tr>
+</thead>
+<tbody id="tbody"></tbody>
+</table>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+const estates=[
+  {name:"德朗邨\nTak Long Estate",district:"九龍城\nKowloon City",region:"九龍\nKowloon",type:"租住屋邨\nPublic Rental Housing",year:"2013",blockType:"非標準型\nNon-standard",blocks:"德璋樓 德瑞樓 德琦樓 德瑜樓 德瓏樓 德珊樓 德瑤樓 德瑩樓 德珮樓\nTak Cheung House, Tak Sui House...",lat:22.330105,lng:114.2031},
+  {name:"啟晴邨\nKai Ching Estate",district:"九龍城\nKowloon City",region:"九龍\nKowloon",type:"租住屋邨\nPublic Rental Housing",year:"2013",blockType:"非標準型\nNon-standard",blocks:"康晴樓 樂晴樓 欣晴樓 賞晴樓 滿晴樓 悅晴樓\nHong Ching House, Lok Ching House...",lat:22.33254,lng:114.20292},
+  {name:"彩福邨\nChoi Fook Estate",district:"觀塘\nKwun Tong",region:"九龍\nKowloon",type:"租住屋邨\nPublic Rental Housing",year:"2010, 2011, 2021",blockType:"非標準型\nNon-standard",blocks:"彩樂樓 彩善樓 彩喜樓 彩歡樓 彩和樓\nChoi Lok House, Choi Sin House...",lat:22.328026,lng:114.21717},
+  {name:"清河邨\nChing Ho Estate",district:"北區\nNorth",region:"新界\nNew Territories",type:"租住屋邨\nPublic Rental Housing",year:"2006",blockType:"新和諧式(I)型\nNew Harmony (I)",blocks:"清澤樓 清照樓 清頌樓 清顯樓 清朗樓 清平樓 清譽樓 清潤樓",lat:22.49311,lng:114.12577},
+  {name:"顯耀邨\nHin Yiu Estate",district:"沙田\nSha Tin",region:"新界\nNew Territories",type:"租住屋邨\nPublic Rental Housing",year:"2005",blockType:"新和諧一型\nNew Harmony I",blocks:"顯耀樓\nHin Yiu House",lat:22.36692,lng:114.17457},
+  {name:"美田邨\nMei Tin Estate",district:"沙田\nSha Tin",region:"新界\nNew Territories",type:"租住屋邨\nPublic Rental Housing",year:"2006",blockType:"改良新和諧一型\nModified New Harmony 1",blocks:"美秀樓 美麗樓 美景樓 美致樓 美樂樓 美滿樓 美庭樓 美全樓",lat:22.37569,lng:114.17018},
+  {name:"長青邨\nCheung Ching Estate",district:"葵青\nKwai Tsing",region:"新界\nNew Territories",type:"租住屋邨\nPublic Rental Housing",year:"1977, 2024",blockType:"舊長型、雙塔式、非標準型\nOld Slab, Twin Tower, Non-Standard",blocks:"青松樓 青楊樓 青葵樓 青梅樓 青柏樓 青桃樓 青槐樓 青榕樓 青荷樓 青蘭樓",lat:22.34968,lng:114.10681},
+  {name:"富山邨\nFu Shan Estate",district:"黃大仙\nWong Tai Sin",region:"九龍\nKowloon",type:"租住屋邨\nPublic Rental Housing",year:"1978, 2020",blockType:"舊長型、非標準型\nOld Slab, Non-standard",blocks:"富禮樓 富信樓 富仁樓 富暉樓",lat:22.34274,lng:114.20913}
+];
+
+let map=L.map('map').setView([22.3,114.17],11);
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
+let markers={},filters={};
+
+estates.forEach((e,i)=>{
+  if(e.lat&&e.lng){
+    markers[i]=L.marker([e.lat,e.lng]).addTo(map).bindPopup(`<b style="font-family:'Noto Sans TC',Arial,sans-serif;">${e.name.split('\n')[0]}</b><br>${e.district.split('\n')[0]}<br>${e.year}`);
+  }
+});
+
+function toggleFilter(col,evt){
+  evt.stopPropagation();
+  const dropdown=document.getElementById(`filter${col}`);
+  document.querySelectorAll('.dropdown').forEach(d=>d.classList.remove('active'));
+  dropdown.classList.toggle('active');
+  if(dropdown.classList.contains('active')){
+    const field=['name','district','region','type','year','blockType','blocks'][col];
+    const values=[...new Set(estates.map(e=>e[field]).filter(Boolean))].slice(0,15);
+    dropdown.innerHTML=values.map(v=>`
+      <div class="filter-item">
+        <input type="checkbox" onchange="setFilter(${col},this.checked,'${v.replace(/'/g,"\\'")}')" ${filters[col]?.includes(v)?'checked':''}>
+        ${v.length>25?v.slice(0,25)+'...':v}
+      </div>
+    `).join('')+'<button class="clear-filter" onclick="clearFilter('+col+')">Clear Filter</button>';
+  }
+}
+
+function setFilter(col,checked,value){
+  if(!filters[col]) filters[col]=[];
+  if(checked){
+    if(!filters[col].includes(value)) filters[col].push(value);
+  }else{
+    filters[col]=filters[col].filter(v=>v!==value);
+  }
+  renderTable();
+}
+
+function clearFilter(col){
+  delete filters[col];
+  document.getElementById(`filter${col}`).classList.remove('active');
+  renderTable();
+}
+
+function renderTable(){
+  let filtered=estates.filter(e=>{
+    for(let col in filters){
+      if(!filters[col].includes(e[['name','district','region','type','year','blockType','blocks'][col]])) return false;
+    }
+    return true;
+  });
+  
+  const tbody=document.getElementById('tbody');
+  tbody.innerHTML='';
+  filtered.forEach((e,i)=>{
+    const row=tbody.insertRow();
+    row.innerHTML=`
+      <td style="font-weight:bold;font-size:15px;">${e.name.replace(/\n/g,'<br>')}</td>
+      <td>${e.district.replace(/\n/g,'<br>')}</td>
+      <td style="font-weight:500;">${e.region.replace(/\n/g,'<br>')}</td>
+      <td>${e.type.replace(/\n/g,'<br>')}</td>
+      <td style="text-align:center;font-weight:bold;color:#059669;font-size:16px;">${e.year}</td>
+      <td>${e.blockType.replace(/\n/g,'<br>')}</td>
+      <td style="font-size:13px;">${e.blocks.replace(/\n/g,'<br>')}</td>
+    `;
+    row.onclick=()=>{
+      document.querySelectorAll('tr').forEach(r=>r.classList.remove('selected'));
+      row.classList.add('selected');
+      if(markers[i]){
+        map.setView([markers[i].getLatLng()],16);
+        markers[i].openPopup();
+      }
+    };
+    row.style.cursor='pointer';
+  });
+  
+  document.getElementById('count').textContent=`顯示 ${filtered.length}/${estates.length} 個屋邨`;
+  document.getElementById('status').textContent='✅ 完美運作！點擊表格行放大地圖，點擊篩選按鈕多選篩選';
+}
+
+document.addEventListener('click',()=>document.querySelectorAll('.dropdown').forEach(d=>d.classList.remove('active')));
+renderTable();
+</script>
+</body>
+</html>
+    
+  </body>
+  
+</html>
